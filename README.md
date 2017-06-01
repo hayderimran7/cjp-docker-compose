@@ -5,7 +5,8 @@ Uses [Docker Machine](http://docs.docker.com/machine/) and [Docker Compose](http
 
 Mostly specific to Mac OS X but should work on Windows and Linux as well.
 
-####Base includes:
+###Base
+includes:
 - HA Proxy  - stats available at: http://{hostname}:9000
   - Only CloudBees Jenkins Operations Center instances (joc1 and joc2) are setup for high availability via HA Proxy
   - This is to demonstrate HA Proxy configuration for CloudBees HA - see entries for HTTP, JNLP and SSH
@@ -28,13 +29,14 @@ Mostly specific to Mac OS X but should work on Windows and Linux as well.
 - default {hostname} is `jenkins.beedemo.local`, if you want to change this then you will have to update the `docker-compose.yml` file so the `proxy` `container_name` matches your hostname (this is required to connect CJE client masters to CJOC), you also need to change the `JENKINS_URL` environmental variable for joc1 and joc2 so it matches your {hostname}
 
 ###Instructions
+
 - install [Docker Toolbox](https://www.docker.com/docker-toolbox)
    Note: Docker Toolbox by default will create a docker-machine. Recommend that you stop the default and create a new machine with virtual memory allocated to it. 
-  - current configuration requires Docker Compose version 1.5+
-  - Requires Docker 1.9+ - using networking, built in bridge driver
+- current configuration requires Docker Compose version 1.5+
+- Requires Docker 1.9+ - using networking, built in bridge driver
 - create a Docker Machine (I use beedemo-local as `{machine_name}`)
-  - `docker-machine create --driver=virtualbox --virtualbox-memory=4096 --virtualbox-disk-size=61440 {machine_name}`
-  - set env for newly created machine: `eval "$(docker-machine env)"`
+- `docker-machine create --driver=virtualbox --virtualbox-memory=4096 --virtualbox-disk-size=61440 {machine_name}`
+- set env for newly created machine: `eval "$(docker-machine env)"`
 - Mac OS X ONLY: replace vboxfs (VirtualBox share) /Users share with nfs share [optional - but increases performance on Mac OS X]
   - Create NFS share on Mac OS X side:
     - create exports file: `sudo vi /etc/exports` with contents (IP used here is your `docker-machine ip {machine_name}`): `/Users 192.168.99.100 -alldirs -mapall={your_username}`
@@ -68,7 +70,9 @@ Mostly specific to Mac OS X but should work on Windows and Linux as well.
   - create jobs
  
 ####Migrating to a new docker-machine
+
 If docker machine goes haywire, migrating to a new one is a trivial process. Simply follow the steps above and update the machine name and IPs where necessary. Before starting `docker-compose`, be sure that host names are updated in `docker-compose.yml`, else you will lose client master connectivity.
 
 ###Use of Docker Networking
+
 A combination of the Docker Compose `container_name` option and the built in networking support introduced with Docker 1.9, allows for a completely generic HA Proxy configuration.  Previously the [ambassador pattern](https://docs.docker.com/engine/articles/ambassador_pattern_linking/) had been used with the Docker/Compose `links` feature to link the CJE client master containers to the CJOC HA cluster via the HA Proxy.  This was necessary because of limitations with the `links` feature - links are one-way, you can't link to a container that is already linked to another continaer - that is if `proxy` is linked to `apiTeam` container, then `apiTeam` can't link to `proxy`, thus the `ambassador` container.  Docker networking allows bi-directional linking, independed of the start-up order.  The trick in this configuration is to override the container name of the `proxy` container, allowing the necessary back-channel communication between CJOC and client masters to use the same URL (jenkins.beedemo.local) as specified for external access to CJOC.
